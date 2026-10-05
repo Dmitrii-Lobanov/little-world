@@ -1,6 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import Link from "next/link";
 
 const backgrounds = [
@@ -43,8 +48,119 @@ const stickers = [
   { name: "Heart", symbol: "♥" },
 ];
 
+type PlacedSticker = {
+  id: string;
+  name: string;
+  symbol: string;
+  x: number;
+  y: number;
+};
+
 export default function StudioPage() {
   const [selectedBackground, setSelectedBackground] = useState(0);
+
+  const [placedStickers, setPlacedStickers] = useState<PlacedSticker[]>([]);
+  const drag = useRef<{ id: string; offsetX: number; offsetY: number } | null>(
+    null,
+  );
+
+  function addSticker(option: (typeof stickers)[number]) {
+    setPlacedStickers((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        name: option.name,
+        symbol: option.symbol,
+        x: 180 + (current.length % 5) * 85,
+        y: 190,
+      },
+    ]);
+  }
+
+  function svgPoint(event: ReactPointerEvent<SVGTextElement>) {
+    const svg = event.currentTarget.ownerSVGElement;
+    const matrix = svg?.getScreenCTM();
+
+    if (!matrix) return null;
+
+    return new DOMPoint(event.clientX, event.clientY).matrixTransform(
+      matrix.inverse(),
+    );
+  }
+
+  function startDragging(
+    event: ReactPointerEvent<SVGTextElement>,
+    sticker: PlacedSticker,
+  ) {
+    const point = svgPoint(event);
+    if (!point) return;
+
+    drag.current = {
+      id: sticker.id,
+      offsetX: point.x - sticker.x,
+      offsetY: point.y - sticker.y,
+    };
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveSticker(event: ReactPointerEvent<SVGTextElement>, id: string) {
+    if (drag.current?.id !== id) return;
+
+    const point = svgPoint(event);
+    if (!point) return;
+
+    const { offsetX, offsetY } = drag.current;
+
+    setPlacedStickers((current) =>
+      current.map((sticker) =>
+        sticker.id === id
+          ? {
+              ...sticker,
+              x: Math.max(35, Math.min(765, point.x - offsetX)),
+              y: Math.max(35, Math.min(485, point.y - offsetY)),
+            }
+          : sticker,
+      ),
+    );
+  }
+
+  function handleStickerKey(
+    event: ReactKeyboardEvent<SVGTextElement>,
+    id: string,
+  ) {
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      setPlacedStickers((current) =>
+        current.filter((sticker) => sticker.id !== id),
+      );
+      return;
+    }
+
+    const step = event.shiftKey ? 20 : 5;
+    const movement: Record<string, [number, number]> = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+    const delta = movement[event.key];
+
+    if (!delta) return;
+    event.preventDefault();
+
+    setPlacedStickers((current) =>
+      current.map((sticker) =>
+        sticker.id === id
+          ? {
+              ...sticker,
+              x: Math.max(35, Math.min(765, sticker.x + delta[0])),
+              y: Math.max(35, Math.min(485, sticker.y + delta[1])),
+            }
+          : sticker,
+      ),
+    );
+  }
 
   const background = backgrounds[selectedBackground];
 
@@ -70,7 +186,7 @@ export default function StudioPage() {
         </span>
       </header>
 
-      <div className="mx-auto grid max-w-[1500px] gap-6 px-5 py-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
+      <div className="mx-auto grid max-w-375 gap-6 px-5 py-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
         <aside className="space-y-5" aria-label="Postcard tools">
           <section className="rounded-[28px] border-2 border-ink/10 bg-paper p-5 shadow-[0_6px_0_#29354a12]">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet">
@@ -118,19 +234,21 @@ export default function StudioPage() {
 
             <div className="mt-5 grid grid-cols-4 gap-2">
               {stickers.map((sticker) => (
-                <div
+                <button
                   key={sticker.name}
-                  className="flex aspect-square items-center justify-center rounded-2xl bg-cream text-3xl text-coral"
-                  aria-label={sticker.name}
+                  type="button"
+                  onClick={() => addSticker(sticker)}
+                  className="flex aspect-square items-center justify-center rounded-2xl bg-cream text-3xl text-coral transition hover:-translate-y-1 hover:bg-sky/40 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-violet"
+                  aria-label={`Add ${sticker.name} sticker`}
                 >
-                  {sticker.symbol}
-                </div>
+                  <span aria-hidden="true">{sticker.symbol}</span>
+                </button>
               ))}
             </div>
           </section>
         </aside>
 
-        <section className="flex min-w-0 flex-col rounded-[32px] border-2 border-ink/10 bg-[#f3e9d3] p-4 shadow-[0_8px_0_#29354a12] sm:p-6 lg:min-h-[700px] lg:p-8">
+        <section className="flex min-w-0 flex-col rounded-4xl border-2 border-ink/10 bg-[#f3e9d3] p-4 shadow-[0_8px_0_#29354a12] sm:p-6 lg:min-h-175 lg:p-8">
           <div className="mb-6 text-center">
             <h2 className="text-2xl font-bold">A postcard from your world</h2>
             <p className="mt-1 text-sm text-ink/65">
@@ -139,12 +257,12 @@ export default function StudioPage() {
           </div>
 
           <div className="flex flex-1 items-center justify-center">
-            <div className="w-full max-w-[780px] rotate-[-1deg] rounded-lg bg-paper p-3 shadow-[0_20px_40px_#29354a30] sm:p-5">
+            <div className="w-full max-w-195 -rotate-1 rounded-lg bg-paper p-3 shadow-[0_20px_40px_#29354a30] sm:p-5">
               <svg
                 viewBox="0 0 800 520"
                 className="block h-auto w-full rounded-sm"
-                role="img"
-                aria-label={`Illustration of ${background.name} with rolling hills and a small house`}
+                role="group"
+                aria-label={`Postcard canvas: ${background.name}`}
               >
                 <rect width="800" height="520" fill={background.sky} />
                 <circle cx="648" cy="105" r="58" fill={background.sun} />
@@ -171,7 +289,7 @@ export default function StudioPage() {
                   rx="8"
                   fill="#FFF8E8"
                 />
-                <path d="M272 291 L374 208 L477 291Z" fill="#F28C79" />
+                <path d="M272 291 L374 208 L477 291Z" fill={background.roof} />
                 <rect
                   x="355"
                   y="350"
@@ -215,6 +333,36 @@ export default function StudioPage() {
                   strokeWidth="5"
                   strokeLinecap="round"
                 />
+
+                {placedStickers.map((sticker) => (
+                  <text
+                    key={sticker.id}
+                    x={sticker.x}
+                    y={sticker.y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="72"
+                    fill="#FFF8E8"
+                    stroke="#29354A"
+                    strokeWidth="1.5"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${sticker.name} sticker. Use arrow keys to move; press Delete to remove.`}
+                    className="cursor-grab select-none focus:stroke-violet focus:stroke-[4px] active:cursor-grabbing"
+                    style={{ touchAction: "none" }}
+                    onPointerDown={(event) => startDragging(event, sticker)}
+                    onPointerMove={(event) => moveSticker(event, sticker.id)}
+                    onPointerUp={() => {
+                      drag.current = null;
+                    }}
+                    onPointerCancel={() => {
+                      drag.current = null;
+                    }}
+                    onKeyDown={(event) => handleStickerKey(event, sticker.id)}
+                  >
+                    {sticker.symbol}
+                  </text>
+                ))}
               </svg>
 
               <div className="flex items-center justify-between gap-4 px-2 pt-4">
