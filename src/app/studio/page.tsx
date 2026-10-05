@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { StickerPicker } from "@/features/studio/StickerPicker";
 import { PostcardCanvas } from "@/features/studio/PostcardCanvas";
 import { BackgroundPicker } from "@/features/studio/BackgroundPicker";
 import { usePostcardEditor } from "@/features/studio/usePostcardEditor";
+import { savePostcard } from "@/features/studio/postcard-storage";
 
 export default function StudioPage() {
   const {
@@ -18,6 +20,22 @@ export default function StudioPage() {
     endDragging,
     handleStickerKey,
   } = usePostcardEditor();
+
+  const [saveStatus, setSaveStatus] = useState("");
+
+  function handleSave() {
+    try {
+      savePostcard({
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        backgroundIndex: selectedBackground,
+        stickers: placedStickers,
+      });
+      setSaveStatus("Postcard saved!");
+    } catch {
+      setSaveStatus("Could not save your postcard. Please try again.");
+    }
+  }
 
   return (
     <main className="min-h-screen bg-cream">
@@ -68,17 +86,24 @@ export default function StudioPage() {
           />
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-paper/75 p-3">
-            <span className="px-3 text-sm font-medium text-ink/65">
-              Your postcard is ready to decorate
+            <span
+              role="status"
+              className="px-3 text-sm font-medium text-ink/65"
+            >
+              {saveStatus || "Your postcard is ready to decorate"}
             </span>
 
             <div className="flex gap-2">
               <span className="rounded-full border-2 border-ink/15 px-5 py-3 font-semibold text-ink/55">
                 Undo
               </span>
-              <span className="rounded-full bg-violet px-6 py-3 font-semibold text-white">
+              <button
+                type="button"
+                onClick={handleSave}
+                className="rounded-full bg-violet px-6 py-3 font-semibold text-white hover:bg-violet/90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-violet"
+              >
                 Save postcard
-              </span>
+              </button>
             </div>
           </div>
         </section>
