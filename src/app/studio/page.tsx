@@ -1,168 +1,23 @@
 "use client";
 
-import {
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
 import Link from "next/link";
-
-const backgrounds = [
-  {
-    name: "Sunny meadow",
-    swatch: "bg-sky",
-    sky: "#A9DDF3",
-    sun: "#FFD56C",
-    farHill: "#B6DC99",
-    middleHill: "#8ACB88",
-    nearHill: "#5EA776",
-    roof: "#F28C79",
-  },
-  {
-    name: "Peach sunset",
-    swatch: "bg-coral",
-    sky: "#F6B39F",
-    sun: "#FFE4A3",
-    farHill: "#D8B6C8",
-    middleHill: "#A997BE",
-    nearHill: "#786B9C",
-    roof: "#A85472",
-  },
-  {
-    name: "Quiet forest",
-    swatch: "bg-grass",
-    sky: "#B9D9C6",
-    sun: "#F5E6AA",
-    farHill: "#A5C59C",
-    middleHill: "#79AA82",
-    nearHill: "#4D846A",
-    roof: "#C87965",
-  },
-] as const;
-
-const stickers = [
-  { name: "Sun", symbol: "☀" },
-  { name: "Flower", symbol: "✿" },
-  { name: "Star", symbol: "★" },
-  { name: "Heart", symbol: "♥" },
-];
-
-type PlacedSticker = {
-  id: string;
-  name: string;
-  symbol: string;
-  x: number;
-  y: number;
-};
+import { StickerPicker } from "@/features/studio/StickerPicker";
+import { PostcardCanvas } from "@/features/studio/PostcardCanvas";
+import { BackgroundPicker } from "@/features/studio/BackgroundPicker";
+import { usePostcardEditor } from "@/features/studio/usePostcardEditor";
 
 export default function StudioPage() {
-  const [selectedBackground, setSelectedBackground] = useState(0);
-
-  const [placedStickers, setPlacedStickers] = useState<PlacedSticker[]>([]);
-  const drag = useRef<{ id: string; offsetX: number; offsetY: number } | null>(
-    null,
-  );
-
-  function addSticker(option: (typeof stickers)[number]) {
-    setPlacedStickers((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        name: option.name,
-        symbol: option.symbol,
-        x: 180 + (current.length % 5) * 85,
-        y: 190,
-      },
-    ]);
-  }
-
-  function svgPoint(event: ReactPointerEvent<SVGTextElement>) {
-    const svg = event.currentTarget.ownerSVGElement;
-    const matrix = svg?.getScreenCTM();
-
-    if (!matrix) return null;
-
-    return new DOMPoint(event.clientX, event.clientY).matrixTransform(
-      matrix.inverse(),
-    );
-  }
-
-  function startDragging(
-    event: ReactPointerEvent<SVGTextElement>,
-    sticker: PlacedSticker,
-  ) {
-    const point = svgPoint(event);
-    if (!point) return;
-
-    drag.current = {
-      id: sticker.id,
-      offsetX: point.x - sticker.x,
-      offsetY: point.y - sticker.y,
-    };
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function moveSticker(event: ReactPointerEvent<SVGTextElement>, id: string) {
-    if (drag.current?.id !== id) return;
-
-    const point = svgPoint(event);
-    if (!point) return;
-
-    const { offsetX, offsetY } = drag.current;
-
-    setPlacedStickers((current) =>
-      current.map((sticker) =>
-        sticker.id === id
-          ? {
-              ...sticker,
-              x: Math.max(35, Math.min(765, point.x - offsetX)),
-              y: Math.max(35, Math.min(485, point.y - offsetY)),
-            }
-          : sticker,
-      ),
-    );
-  }
-
-  function handleStickerKey(
-    event: ReactKeyboardEvent<SVGTextElement>,
-    id: string,
-  ) {
-    if (event.key === "Delete" || event.key === "Backspace") {
-      event.preventDefault();
-      setPlacedStickers((current) =>
-        current.filter((sticker) => sticker.id !== id),
-      );
-      return;
-    }
-
-    const step = event.shiftKey ? 20 : 5;
-    const movement: Record<string, [number, number]> = {
-      ArrowLeft: [-step, 0],
-      ArrowRight: [step, 0],
-      ArrowUp: [0, -step],
-      ArrowDown: [0, step],
-    };
-    const delta = movement[event.key];
-
-    if (!delta) return;
-    event.preventDefault();
-
-    setPlacedStickers((current) =>
-      current.map((sticker) =>
-        sticker.id === id
-          ? {
-              ...sticker,
-              x: Math.max(35, Math.min(765, sticker.x + delta[0])),
-              y: Math.max(35, Math.min(485, sticker.y + delta[1])),
-            }
-          : sticker,
-      ),
-    );
-  }
-
-  const background = backgrounds[selectedBackground];
+  const {
+    background,
+    selectedBackground,
+    setSelectedBackground,
+    placedStickers,
+    addSticker,
+    startDragging,
+    moveSticker,
+    endDragging,
+    handleStickerKey,
+  } = usePostcardEditor();
 
   return (
     <main className="min-h-screen bg-cream">
@@ -188,64 +43,11 @@ export default function StudioPage() {
 
       <div className="mx-auto grid max-w-375 gap-6 px-5 py-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
         <aside className="space-y-5" aria-label="Postcard tools">
-          <section className="rounded-[28px] border-2 border-ink/10 bg-paper p-5 shadow-[0_6px_0_#29354a12]">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet">
-              Step 1
-            </p>
-            <h2 className="mt-1 text-xl font-bold">Pick a place</h2>
-            <p className="mt-1 text-sm leading-relaxed text-ink/65">
-              Where will your postcard come from?
-            </p>
-
-            <div className="mt-5 grid grid-cols-3 gap-3 lg:grid-cols-1">
-              {backgrounds.map((option, index) => (
-                <button
-                  key={option.name}
-                  type="button"
-                  onClick={() => setSelectedBackground(index)}
-                  aria-pressed={selectedBackground === index}
-                  className={`flex items-center gap-3 rounded-2xl border-2 p-2 text-left transition hover:-translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-violet ${
-                    selectedBackground === index
-                      ? "border-violet bg-violet/5"
-                      : "border-transparent bg-cream"
-                  }`}
-                >
-                  <span
-                    className={`h-12 w-14 shrink-0 rounded-xl ${option.swatch}`}
-                    aria-hidden="true"
-                  />
-                  <span className="hidden text-sm font-semibold lg:inline">
-                    {option.name}
-                  </span>
-                  <span className="sr-only lg:hidden">{option.name}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[28px] border-2 border-ink/10 bg-paper p-5 shadow-[0_6px_0_#29354a12]">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet">
-              Step 2
-            </p>
-            <h2 className="mt-1 text-xl font-bold">Add some magic</h2>
-            <p className="mt-1 text-sm leading-relaxed text-ink/65">
-              Choose something fun to place.
-            </p>
-
-            <div className="mt-5 grid grid-cols-4 gap-2">
-              {stickers.map((sticker) => (
-                <button
-                  key={sticker.name}
-                  type="button"
-                  onClick={() => addSticker(sticker)}
-                  className="flex aspect-square items-center justify-center rounded-2xl bg-cream text-3xl text-coral transition hover:-translate-y-1 hover:bg-sky/40 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-violet"
-                  aria-label={`Add ${sticker.name} sticker`}
-                >
-                  <span aria-hidden="true">{sticker.symbol}</span>
-                </button>
-              ))}
-            </div>
-          </section>
+          <BackgroundPicker
+            selectedBackground={selectedBackground}
+            onSelect={setSelectedBackground}
+          />
+          <StickerPicker onAdd={addSticker} />
         </aside>
 
         <section className="flex min-w-0 flex-col rounded-4xl border-2 border-ink/10 bg-[#f3e9d3] p-4 shadow-[0_8px_0_#29354a12] sm:p-6 lg:min-h-175 lg:p-8">
@@ -256,121 +58,14 @@ export default function StudioPage() {
             </p>
           </div>
 
-          <div className="flex flex-1 items-center justify-center">
-            <div className="w-full max-w-195 -rotate-1 rounded-lg bg-paper p-3 shadow-[0_20px_40px_#29354a30] sm:p-5">
-              <svg
-                viewBox="0 0 800 520"
-                className="block h-auto w-full rounded-sm"
-                role="group"
-                aria-label={`Postcard canvas: ${background.name}`}
-              >
-                <rect width="800" height="520" fill={background.sky} />
-                <circle cx="648" cy="105" r="58" fill={background.sun} />
-                <ellipse cx="196" cy="115" rx="92" ry="28" fill="#FFFDF6" />
-                <ellipse cx="250" cy="102" rx="60" ry="29" fill="#FFFDF6" />
-                <ellipse cx="478" cy="170" rx="77" ry="22" fill="#FFFDF6" />
-                <path
-                  d="M0 332 Q190 210 400 335 T800 300 V520 H0Z"
-                  fill={background.farHill}
-                />
-                <path
-                  d="M0 390 Q230 290 455 390 T800 365 V520 H0Z"
-                  fill={background.middleHill}
-                />
-                <path
-                  d="M0 465 Q210 350 430 455 T800 420 V520 H0Z"
-                  fill={background.nearHill}
-                />
-                <rect
-                  x="291"
-                  y="280"
-                  width="167"
-                  height="150"
-                  rx="8"
-                  fill="#FFF8E8"
-                />
-                <path d="M272 291 L374 208 L477 291Z" fill={background.roof} />
-                <rect
-                  x="355"
-                  y="350"
-                  width="42"
-                  height="80"
-                  rx="20"
-                  fill="#7664B7"
-                />
-                <rect
-                  x="313"
-                  y="321"
-                  width="32"
-                  height="34"
-                  rx="6"
-                  fill="#A9DDF3"
-                />
-                <rect
-                  x="408"
-                  y="321"
-                  width="32"
-                  height="34"
-                  rx="6"
-                  fill="#A9DDF3"
-                />
-                <path
-                  d="M97 430 V344 M97 362 C70 339 64 316 88 307 C103 281 134 293 135 317 C162 337 138 362 97 362Z"
-                  fill="#5EA776"
-                  stroke="#477E5B"
-                  strokeWidth="7"
-                />
-                <path
-                  d="M659 410 V318 M659 337 C626 320 634 288 654 287 C675 260 713 279 706 306 C730 332 705 352 659 337Z"
-                  fill="#5EA776"
-                  stroke="#477E5B"
-                  strokeWidth="7"
-                />
-                <path
-                  d="M51 480 Q133 425 230 481 M555 482 Q653 425 762 475"
-                  fill="none"
-                  stroke="#FFF8E8"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                />
-
-                {placedStickers.map((sticker) => (
-                  <text
-                    key={sticker.id}
-                    x={sticker.x}
-                    y={sticker.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="72"
-                    fill="#FFF8E8"
-                    stroke="#29354A"
-                    strokeWidth="1.5"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${sticker.name} sticker. Use arrow keys to move; press Delete to remove.`}
-                    className="cursor-grab select-none focus:stroke-violet focus:stroke-[4px] active:cursor-grabbing"
-                    style={{ touchAction: "none" }}
-                    onPointerDown={(event) => startDragging(event, sticker)}
-                    onPointerMove={(event) => moveSticker(event, sticker.id)}
-                    onPointerUp={() => {
-                      drag.current = null;
-                    }}
-                    onPointerCancel={() => {
-                      drag.current = null;
-                    }}
-                    onKeyDown={(event) => handleStickerKey(event, sticker.id)}
-                  >
-                    {sticker.symbol}
-                  </text>
-                ))}
-              </svg>
-
-              <div className="flex items-center justify-between gap-4 px-2 pt-4">
-                <p className="font-semibold">Greetings from Little World!</p>
-                <span className="text-sm text-ink/55">Made by me ✿</span>
-              </div>
-            </div>
-          </div>
+          <PostcardCanvas
+            background={background}
+            placedStickers={placedStickers}
+            onPointerDown={startDragging}
+            onPointerMove={moveSticker}
+            onPointerEnd={endDragging}
+            onKeyDown={handleStickerKey}
+          />
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-paper/75 p-3">
             <span className="px-3 text-sm font-medium text-ink/65">
