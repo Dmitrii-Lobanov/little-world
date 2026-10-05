@@ -11,17 +11,38 @@ import {
   type PlacedSticker,
   type StickerOption,
 } from "./studio-data";
+import { createEmptyPostcard, PostcardDraft } from "./postcard-model";
 
 export function usePostcardEditor() {
-  const [selectedBackground, setSelectedBackground] = useState(0);
+  const [draft, setDraft] = useState<PostcardDraft>(createEmptyPostcard);
 
-  const [placedStickers, setPlacedStickers] = useState<PlacedSticker[]>([]);
+  const selectedBackground = draft.backgroundIndex;
+  const placedStickers = draft.stickers;
+
+  function setSelectedBackground(index: number) {
+    if (!backgrounds[index]) return;
+
+    setDraft((current) => ({
+      ...current,
+      backgroundIndex: index,
+    }));
+  }
+
+  function updateStickers(
+    update: (stickers: PlacedSticker[]) => PlacedSticker[],
+  ) {
+    setDraft((current) => ({
+      ...current,
+      stickers: update(current.stickers),
+    }));
+  }
+
   const drag = useRef<{ id: string; offsetX: number; offsetY: number } | null>(
     null,
   );
 
   function addSticker(option: StickerOption) {
-    setPlacedStickers((current) => [
+    updateStickers((current) => [
       ...current,
       {
         id: crypto.randomUUID(),
@@ -68,7 +89,7 @@ export function usePostcardEditor() {
 
     const { offsetX, offsetY } = drag.current;
 
-    setPlacedStickers((current) =>
+    updateStickers((current) =>
       current.map((sticker) =>
         sticker.id === id
           ? {
@@ -87,7 +108,7 @@ export function usePostcardEditor() {
   ) {
     if (event.key === "Delete" || event.key === "Backspace") {
       event.preventDefault();
-      setPlacedStickers((current) =>
+      updateStickers((current) =>
         current.filter((sticker) => sticker.id !== id),
       );
       return;
@@ -105,7 +126,7 @@ export function usePostcardEditor() {
     if (!delta) return;
     event.preventDefault();
 
-    setPlacedStickers((current) =>
+    updateStickers((current) =>
       current.map((sticker) =>
         sticker.id === id
           ? {
@@ -122,10 +143,11 @@ export function usePostcardEditor() {
     drag.current = null;
   }
 
-  const background = backgrounds[selectedBackground];
+  const background = backgrounds[selectedBackground] ?? backgrounds[0];
 
   return {
     background,
+    draft,
     selectedBackground,
     setSelectedBackground,
     placedStickers,

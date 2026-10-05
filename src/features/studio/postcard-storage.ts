@@ -1,13 +1,12 @@
+import type { DrawingStroke, PostcardDraft } from "./postcard-model";
 import type { PlacedSticker } from "./studio-data";
 
-const STORAGE_KEY = "little-world-postcards";
-
-export type SavedPostcard = {
+export type SavedPostcard = PostcardDraft & {
   id: string;
   createdAt: string;
-  backgroundIndex: number;
-  stickers: PlacedSticker[];
 };
+
+const STORAGE_KEY = "little-world-postcards";
 
 export function getPostcardsRaw(): string | null {
   return localStorage.getItem(STORAGE_KEY);
@@ -18,7 +17,40 @@ export function parsePostcards(raw: string | null): SavedPostcard[] {
 
   try {
     const value: unknown = JSON.parse(raw);
-    return Array.isArray(value) ? (value as SavedPostcard[]) : [];
+
+    if (!Array.isArray(value)) return [];
+
+    return value.flatMap((item: unknown): SavedPostcard[] => {
+      if (!item || typeof item !== "object") return [];
+
+      const record = item as Record<string, unknown>;
+
+      if (
+        typeof record.id !== "string" ||
+        typeof record.createdAt !== "string"
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          schemaVersion: 1,
+          id: record.id,
+          createdAt: record.createdAt,
+          backgroundIndex:
+            typeof record.backgroundIndex === "number"
+              ? record.backgroundIndex
+              : 0,
+          stickers: Array.isArray(record.stickers)
+            ? (record.stickers as PlacedSticker[])
+            : [],
+          message: typeof record.message === "string" ? record.message : "",
+          strokes: Array.isArray(record.strokes)
+            ? (record.strokes as DrawingStroke[])
+            : [],
+        },
+      ];
+    });
   } catch {
     return [];
   }

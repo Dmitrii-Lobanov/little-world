@@ -11,6 +11,7 @@ import { savePostcard } from "@/features/studio/postcard-storage";
 export default function StudioPage() {
   const {
     background,
+    draft,
     selectedBackground,
     setSelectedBackground,
     placedStickers,
@@ -26,11 +27,11 @@ export default function StudioPage() {
   function handleSave() {
     try {
       savePostcard({
+        ...draft,
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
-        backgroundIndex: selectedBackground,
-        stickers: placedStickers,
       });
+
       setSaveStatus("Postcard saved!");
     } catch {
       setSaveStatus("Could not save your postcard. Please try again.");
