@@ -1,10 +1,40 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 
 const backgrounds = [
-  { name: "Sunny meadow", colors: "bg-sky" },
-  { name: "Peach sunset", colors: "bg-coral" },
-  { name: "Quiet forest", colors: "bg-grass" },
-];
+  {
+    name: "Sunny meadow",
+    swatch: "bg-sky",
+    sky: "#A9DDF3",
+    sun: "#FFD56C",
+    farHill: "#B6DC99",
+    middleHill: "#8ACB88",
+    nearHill: "#5EA776",
+    roof: "#F28C79",
+  },
+  {
+    name: "Peach sunset",
+    swatch: "bg-coral",
+    sky: "#F6B39F",
+    sun: "#FFE4A3",
+    farHill: "#D8B6C8",
+    middleHill: "#A997BE",
+    nearHill: "#786B9C",
+    roof: "#A85472",
+  },
+  {
+    name: "Quiet forest",
+    swatch: "bg-grass",
+    sky: "#B9D9C6",
+    sun: "#F5E6AA",
+    farHill: "#A5C59C",
+    middleHill: "#79AA82",
+    nearHill: "#4D846A",
+    roof: "#C87965",
+  },
+] as const;
 
 const stickers = [
   { name: "Sun", symbol: "☀" },
@@ -14,6 +44,10 @@ const stickers = [
 ];
 
 export default function StudioPage() {
+  const [selectedBackground, setSelectedBackground] = useState(0);
+
+  const background = backgrounds[selectedBackground];
+
   return (
     <main className="min-h-screen bg-cream">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-ink/10 bg-paper px-6 py-4 lg:px-10">
@@ -48,23 +82,27 @@ export default function StudioPage() {
             </p>
 
             <div className="mt-5 grid grid-cols-3 gap-3 lg:grid-cols-1">
-              {backgrounds.map((background, index) => (
-                <div
-                  key={background.name}
-                  className={`flex items-center gap-3 rounded-2xl border-2 p-2 ${
-                    index === 0
+              {backgrounds.map((option, index) => (
+                <button
+                  key={option.name}
+                  type="button"
+                  onClick={() => setSelectedBackground(index)}
+                  aria-pressed={selectedBackground === index}
+                  className={`flex items-center gap-3 rounded-2xl border-2 p-2 text-left transition hover:-translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-violet ${
+                    selectedBackground === index
                       ? "border-violet bg-violet/5"
                       : "border-transparent bg-cream"
                   }`}
                 >
                   <span
-                    className={`h-12 w-14 shrink-0 rounded-xl ${background.colors}`}
+                    className={`h-12 w-14 shrink-0 rounded-xl ${option.swatch}`}
                     aria-hidden="true"
                   />
                   <span className="hidden text-sm font-semibold lg:inline">
-                    {background.name}
+                    {option.name}
                   </span>
-                </div>
+                  <span className="sr-only lg:hidden">{option.name}</span>
+                </button>
               ))}
             </div>
           </section>
@@ -106,24 +144,24 @@ export default function StudioPage() {
                 viewBox="0 0 800 520"
                 className="block h-auto w-full rounded-sm"
                 role="img"
-                aria-label="Illustration of a sunny meadow with rolling hills and a small house"
+                aria-label={`Illustration of ${background.name} with rolling hills and a small house`}
               >
-                <rect width="800" height="520" fill="#A9DDF3" />
-                <circle cx="648" cy="105" r="58" fill="#FFD56C" />
+                <rect width="800" height="520" fill={background.sky} />
+                <circle cx="648" cy="105" r="58" fill={background.sun} />
                 <ellipse cx="196" cy="115" rx="92" ry="28" fill="#FFFDF6" />
                 <ellipse cx="250" cy="102" rx="60" ry="29" fill="#FFFDF6" />
                 <ellipse cx="478" cy="170" rx="77" ry="22" fill="#FFFDF6" />
                 <path
                   d="M0 332 Q190 210 400 335 T800 300 V520 H0Z"
-                  fill="#B6DC99"
+                  fill={background.farHill}
                 />
                 <path
                   d="M0 390 Q230 290 455 390 T800 365 V520 H0Z"
-                  fill="#8ACB88"
+                  fill={background.middleHill}
                 />
                 <path
                   d="M0 465 Q210 350 430 455 T800 420 V520 H0Z"
-                  fill="#5EA776"
+                  fill={background.nearHill}
                 />
                 <rect
                   x="291"
