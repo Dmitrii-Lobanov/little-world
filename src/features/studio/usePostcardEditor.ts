@@ -28,6 +28,13 @@ export function usePostcardEditor() {
     }));
   }
 
+  function setMessage(message: string) {
+    setDraft((current) => ({
+      ...current,
+      message,
+    }));
+  }
+
   function updateStickers(
     update: (stickers: PlacedSticker[]) => PlacedSticker[],
   ) {
@@ -156,5 +163,6 @@ export function usePostcardEditor() {
     moveSticker,
     endDragging,
     handleStickerKey,
+    setMessage,
   };
 }

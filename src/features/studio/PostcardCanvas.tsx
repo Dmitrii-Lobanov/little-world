@@ -7,6 +7,7 @@ import type { Background, PlacedSticker } from "./studio-data";
 type Props = {
   background: Background;
   placedStickers: PlacedSticker[];
+  message: string;
   onPointerDown?: (
     event: ReactPointerEvent<SVGTextElement>,
     sticker: PlacedSticker,
@@ -26,6 +27,7 @@ export function PostcardCanvas({
   onPointerMove,
   onPointerEnd,
   onKeyDown,
+  message,
 }: Props) {
   const editable = Boolean(onPointerDown);
 
@@ -133,7 +135,9 @@ export function PostcardCanvas({
         </svg>
 
         <div className="flex items-center justify-between gap-4 px-2 pt-4">
-          <p className="font-semibold">Greetings from Little World!</p>
+          <p className="min-w-0 flex-1 whitespace-pre-wrap wrap-break-word font-semibold">
+            {message.trim() || "Greetings from Little World!"}
+          </p>
           <span className="text-sm text-ink/55">Made by me ✿</span>
         </div>
       </div>

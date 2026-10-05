@@ -7,6 +7,7 @@ import { PostcardCanvas } from "@/features/studio/PostcardCanvas";
 import { BackgroundPicker } from "@/features/studio/BackgroundPicker";
 import { usePostcardEditor } from "@/features/studio/usePostcardEditor";
 import { savePostcard } from "@/features/studio/postcard-storage";
+import { MessageEditor } from "@/features/studio/MessageEditor";
 
 export default function StudioPage() {
   const {
@@ -20,6 +21,7 @@ export default function StudioPage() {
     moveSticker,
     endDragging,
     handleStickerKey,
+    setMessage,
   } = usePostcardEditor();
 
   const [saveStatus, setSaveStatus] = useState("");
@@ -70,6 +72,7 @@ export default function StudioPage() {
             onSelect={setSelectedBackground}
           />
           <StickerPicker onAdd={addSticker} />
+          <MessageEditor value={draft.message} onChange={setMessage} />
         </aside>
 
         <section className="flex min-w-0 flex-col rounded-4xl border-2 border-ink/10 bg-[#f3e9d3] p-4 shadow-[0_8px_0_#29354a12] sm:p-6 lg:min-h-175 lg:p-8">
@@ -87,6 +90,7 @@ export default function StudioPage() {
             onPointerMove={moveSticker}
             onPointerEnd={endDragging}
             onKeyDown={handleStickerKey}
+            message={draft.message}
           />
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-paper/75 p-3">

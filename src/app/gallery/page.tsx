@@ -68,6 +68,7 @@ export default function GalleryPage() {
                   <PostcardCanvas
                     background={background}
                     placedStickers={postcard.stickers}
+                    message={postcard.message}
                   />
                   <div className="mt-6 flex items-center justify-between gap-3">
                     <h2 className="text-xl font-bold">{background.name}</h2>
