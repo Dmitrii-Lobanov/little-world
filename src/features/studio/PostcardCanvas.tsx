@@ -7,13 +7,16 @@ import type { Background, PlacedSticker } from "./studio-data";
 type Props = {
   background: Background;
   placedStickers: PlacedSticker[];
-  onPointerDown: (
+  onPointerDown?: (
     event: ReactPointerEvent<SVGTextElement>,
     sticker: PlacedSticker,
   ) => void;
-  onPointerMove: (event: ReactPointerEvent<SVGTextElement>, id: string) => void;
-  onPointerEnd: () => void;
-  onKeyDown: (event: ReactKeyboardEvent<SVGTextElement>, id: string) => void;
+  onPointerMove?: (
+    event: ReactPointerEvent<SVGTextElement>,
+    id: string,
+  ) => void;
+  onPointerEnd?: () => void;
+  onKeyDown?: (event: ReactKeyboardEvent<SVGTextElement>, id: string) => void;
 };
 
 export function PostcardCanvas({
@@ -24,6 +27,8 @@ export function PostcardCanvas({
   onPointerEnd,
   onKeyDown,
 }: Props) {
+  const editable = Boolean(onPointerDown);
+
   return (
     <div className="flex flex-1 items-center justify-center">
       <div className="w-full max-w-195 -rotate-1 rounded-lg bg-paper p-3 shadow-[0_20px_40px_#29354a30] sm:p-5">
@@ -93,16 +98,34 @@ export function PostcardCanvas({
               fill="#FFF8E8"
               stroke="#29354A"
               strokeWidth="1.5"
-              role="button"
-              tabIndex={0}
-              aria-label={`${sticker.name} sticker. Use arrow keys to move; press Delete to remove.`}
-              className="cursor-grab select-none focus:stroke-violet focus:stroke-[4px] active:cursor-grabbing"
-              style={{ touchAction: "none" }}
-              onPointerDown={(event) => onPointerDown(event, sticker)}
-              onPointerMove={(event) => onPointerMove(event, sticker.id)}
+              role={editable ? "button" : undefined}
+              tabIndex={editable ? 0 : undefined}
+              aria-label={
+                editable
+                  ? `${sticker.name} sticker. Use arrow keys to move; press Delete to remove.`
+                  : sticker.name
+              }
+              className={
+                editable
+                  ? "cursor-grab select-none focus:stroke-violet focus:stroke-[4px] active:cursor-grabbing"
+                  : "select-none"
+              }
+              style={editable ? { touchAction: "none" } : undefined}
+              onPointerDown={
+                onPointerDown
+                  ? (event) => onPointerDown(event, sticker)
+                  : undefined
+              }
+              onPointerMove={
+                onPointerMove
+                  ? (event) => onPointerMove(event, sticker.id)
+                  : undefined
+              }
               onPointerUp={onPointerEnd}
               onPointerCancel={onPointerEnd}
-              onKeyDown={(event) => onKeyDown(event, sticker.id)}
+              onKeyDown={
+                onKeyDown ? (event) => onKeyDown(event, sticker.id) : undefined
+              }
             >
               {sticker.symbol}
             </text>

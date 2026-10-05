@@ -54,9 +54,12 @@ export default function StudioPage() {
           <h1 className="text-2xl font-bold">Postcard Studio</h1>
         </div>
 
-        <span className="rounded-full bg-sky/40 px-4 py-2 text-sm font-semibold">
+        <Link
+          href="/gallery"
+          className="rounded-full bg-sky/40 px-4 py-2 text-sm font-semibold hover:bg-sky/70 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-violet"
+        >
           My postcards
-        </span>
+        </Link>
       </header>
 
       <div className="mx-auto grid max-w-375 gap-6 px-5 py-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
